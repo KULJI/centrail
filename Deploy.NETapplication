@@ -1,0 +1,42 @@
+jobs:
+  Build:
+    runs-on: windows-selfhosted
+    needs: Build
+    steps:
+    
+    - name: Download a Build Artifact
+      uses: actions/download-artifact@v2.0.5
+      with:
+        name: Parts
+        path: ${{github.workspace}}
+   - name: Run Powershell
+      run: |
+        & '${{github.workspace}}\PartsUnlimited-aspnet45\app_pool.ps1' -pool_name ${{env.app_pool_name}} -site_name ${{env.site_name}} - packagepath ${{env.contentpath}}
+
+
+
+
+aram ($pool_name, $site_name, $packagepath)
+Reset-IISServerManager  -Confirm: $false 
+#check if the app pool exists
+if  ((Get-IISAppPool).name -eq $pool_name )
+{
+    echo "----------------------------"
+    echo "|     Pool exists          |"
+    echo "----------------------------"
+}
+else  {
+    New-WebAppPool -Name $pool_name -Force
+}
+
+Reset-IISServerManager -Confirm:$false
+#check if the site exists
+if ((Get-IISSite).name -eq $site_name)
+{
+    echo "----------------------------"
+    echo "|     Site exists          |"
+    echo "----------------------------"
+}
+else {
+    New-Website -Name $site_name -ApplicationPool $pool_name -Force -PhysicalPath $packagepath -Port 8083
+}
